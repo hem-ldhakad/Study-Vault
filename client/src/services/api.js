@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// In development, use relative '/api' so Vite proxy forwards requests seamlessly to port 5000
-const baseURL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api');
+// Get API base URL
+let rawBaseURL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api');
+
+// Auto-fix: Ensure base URL ends with /api if an absolute URL is provided without /api
+let baseURL = rawBaseURL;
+if (baseURL !== '/api' && !baseURL.endsWith('/api') && !baseURL.endsWith('/api/')) {
+  baseURL = baseURL.replace(/\/+$/, '') + '/api';
+}
 
 const api = axios.create({
   baseURL,
