@@ -11,7 +11,6 @@ import {
   Share2,
   Check,
   ExternalLink,
-  AlertCircle,
 } from 'lucide-react';
 import { noteService } from '../services/noteService';
 import { userService } from '../services/userService';
@@ -32,7 +31,7 @@ export const NoteDetails = () => {
   const [downloading, setDownloading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [pdfLoadError, setPdfLoadError] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -78,11 +77,6 @@ export const NoteDetails = () => {
       setNote((prev) => (prev ? { ...prev, downloads: prev.downloads + 1 } : prev));
     } catch (err) {
       console.error('Download error', err);
-      // Fallback direct window open if blob download fails
-      if (note?.pdf) {
-        const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
-        window.open(`${SERVER_BASE_URL}${cleanPdfPath}`, '_blank');
-      }
     } finally {
       setDownloading(false);
     }
@@ -128,10 +122,13 @@ export const NoteDetails = () => {
     );
   }
 
-  // Build clean PDF URL
-  const cleanPdfPath = note.pdf?.startsWith('/') ? note.pdf : `/${note.pdf || ''}`;
+  // Build clean URLs for PDF and Thumbnail
+  const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
   const pdfUrl = `${SERVER_BASE_URL}${cleanPdfPath}`;
-  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+
+  const thumbnailUrl = note.thumbnail
+    ? `${SERVER_BASE_URL}${note.thumbnail.startsWith('/') ? note.thumbnail : `/${note.thumbnail}`}`
+    : null;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto py-4">
@@ -172,9 +169,9 @@ export const NoteDetails = () => {
               href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-sm border border-slate-300 transition"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-sm border border-indigo-200 transition shadow-sm"
             >
-              <ExternalLink className="w-4 h-4 text-indigo-600" /> Open PDF
+              <ExternalLink className="w-4 h-4 text-indigo-600" /> Open Full PDF
             </a>
             <Button size="lg" onClick={handleDownload} loading={downloading} icon={Download}>
               Download PDF
@@ -210,62 +207,47 @@ export const NoteDetails = () => {
         </div>
       </div>
 
-      {/* Embedded PDF Document Viewer Box */}
-      <div className="bg-white border border-slate-300 rounded-3xl overflow-hidden shadow-2xl space-y-3 p-4">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 text-xs text-slate-900 font-bold">
-          <span className="flex items-center gap-2">
+      {/* Direct Cover / First Page Preview Image Container */}
+      <div className="bg-white border border-slate-300 rounded-3xl overflow-hidden shadow-2xl space-y-4 p-6">
+        <div className="flex items-center justify-between px-2 pb-3 border-b border-slate-200 text-xs text-slate-900 font-bold">
+          <span className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
             <FileText className="w-4 h-4 text-indigo-600" /> Document Preview
           </span>
-
           <a
             href={pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline font-extrabold flex items-center gap-1"
+            className="text-indigo-600 hover:underline font-extrabold flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200"
           >
-            Open in new tab <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-3.5 h-3.5" /> View PDF Document
           </a>
         </div>
 
-        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 relative">
-          {!pdfLoadError ? (
-            <object
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full h-full rounded-2xl"
-              onError={() => setPdfLoadError(true)}
-            >
-              <iframe
-                src={googleViewerUrl}
-                title={note.title}
-                className="w-full h-full border-none rounded-2xl"
-                onError={() => setPdfLoadError(true)}
-              />
-            </object>
+        <div className="w-full min-h-[350px] max-h-[700px] rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center p-4">
+          {thumbnailUrl && !imgError ? (
+            <img
+              src={thumbnailUrl}
+              alt={note.title}
+              onError={() => setImgError(true)}
+              className="max-h-[650px] w-auto object-contain rounded-xl shadow-lg border border-slate-200 mx-auto"
+            />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-slate-50 space-y-4">
-              <div className="p-4 bg-indigo-100 rounded-full text-indigo-600">
-                <FileText className="w-12 h-12" />
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-4 max-w-md mx-auto">
+              <div className="p-5 bg-indigo-50 rounded-3xl border border-indigo-200 shadow-sm">
+                <FileText className="w-16 h-16 text-indigo-600" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-black text-slate-900">{note.title}</h3>
-                <p className="text-xs text-slate-700 font-bold max-w-md mx-auto">
-                  Click below to view or download the complete PDF note document directly.
-                </p>
+              <div>
+                <h4 className="text-base font-extrabold text-slate-900">{note.title}</h4>
+                <p className="text-xs text-slate-700 font-medium mt-1">PDF Study Guide Document</p>
               </div>
-              <div className="flex items-center gap-3 pt-2">
-                <a
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black shadow-md transition inline-flex items-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" /> View PDF in Tab
-                </a>
-                <Button size="sm" onClick={handleDownload} loading={downloading} icon={Download}>
-                  Download PDF
-                </Button>
-              </div>
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs shadow-md shadow-indigo-500/20 transition"
+              >
+                <ExternalLink className="w-4 h-4" /> Open Full PDF Document
+              </a>
             </div>
           )}
         </div>
