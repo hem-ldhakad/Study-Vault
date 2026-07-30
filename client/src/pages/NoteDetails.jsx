@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  FileText,
   Download,
   Eye,
   Bookmark,
@@ -31,7 +30,6 @@ export const NoteDetails = () => {
   const [downloading, setDownloading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -105,7 +103,7 @@ export const NoteDetails = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <Spinner size="lg" />
-        <p className="text-sm font-bold text-slate-800 animate-pulse">Loading note document...</p>
+        <p className="text-sm font-bold text-slate-800 animate-pulse">Loading note details...</p>
       </div>
     );
   }
@@ -122,13 +120,9 @@ export const NoteDetails = () => {
     );
   }
 
-  // Build clean URLs for PDF and Thumbnail
+  // Build clean URL for PDF
   const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
   const pdfUrl = `${SERVER_BASE_URL}${cleanPdfPath}`;
-
-  const thumbnailUrl = note.thumbnail
-    ? `${SERVER_BASE_URL}${note.thumbnail.startsWith('/') ? note.thumbnail : `/${note.thumbnail}`}`
-    : null;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto py-4">
@@ -159,19 +153,19 @@ export const NoteDetails = () => {
       {/* Note Header Info Card */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-2">
+          <div className="space-y-2 max-w-2xl">
             {note.category?.name && <Badge variant="indigo">{note.category.name}</Badge>}
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{note.title}</h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <a
               href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-sm border border-indigo-200 transition shadow-sm"
             >
-              <ExternalLink className="w-4 h-4 text-indigo-600" /> Open Full PDF
+              <ExternalLink className="w-4 h-4 text-indigo-600" /> Open PDF Document
             </a>
             <Button size="lg" onClick={handleDownload} loading={downloading} icon={Download}>
               Download PDF
@@ -204,52 +198,6 @@ export const NoteDetails = () => {
               <span>{formatNumber(note.downloads)} downloads</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Direct Cover / First Page Preview Image Container */}
-      <div className="bg-white border border-slate-300 rounded-3xl overflow-hidden shadow-2xl space-y-4 p-6">
-        <div className="flex items-center justify-between px-2 pb-3 border-b border-slate-200 text-xs text-slate-900 font-bold">
-          <span className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
-            <FileText className="w-4 h-4 text-indigo-600" /> Document Preview
-          </span>
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline font-extrabold flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200"
-          >
-            <ExternalLink className="w-3.5 h-3.5" /> View PDF Document
-          </a>
-        </div>
-
-        <div className="w-full min-h-[350px] max-h-[700px] rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center p-4">
-          {thumbnailUrl && !imgError ? (
-            <img
-              src={thumbnailUrl}
-              alt={note.title}
-              onError={() => setImgError(true)}
-              className="max-h-[650px] w-auto object-contain rounded-xl shadow-lg border border-slate-200 mx-auto"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-4 max-w-md mx-auto">
-              <div className="p-5 bg-indigo-50 rounded-3xl border border-indigo-200 shadow-sm">
-                <FileText className="w-16 h-16 text-indigo-600" />
-              </div>
-              <div>
-                <h4 className="text-base font-extrabold text-slate-900">{note.title}</h4>
-                <p className="text-xs text-slate-700 font-medium mt-1">PDF Study Guide Document</p>
-              </div>
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs shadow-md shadow-indigo-500/20 transition"
-              >
-                <ExternalLink className="w-4 h-4" /> Open Full PDF Document
-              </a>
-            </div>
-          )}
         </div>
       </div>
     </div>
