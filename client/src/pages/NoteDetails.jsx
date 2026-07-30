@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Share2,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 import { noteService } from '../services/noteService';
 import { userService } from '../services/userService';
@@ -30,6 +31,7 @@ export const NoteDetails = () => {
   const [downloading, setDownloading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [viewerMode, setViewerMode] = useState('embed'); // 'embed' or 'google'
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -120,7 +122,10 @@ export const NoteDetails = () => {
     );
   }
 
-  const pdfUrl = `${SERVER_BASE_URL}${note.pdf}`;
+  // Ensure clean pdf URL without double slashes
+  const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
+  const pdfUrl = `${SERVER_BASE_URL}${cleanPdfPath}`;
+  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto py-4">
@@ -156,9 +161,19 @@ export const NoteDetails = () => {
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{note.title}</h1>
           </div>
 
-          <Button size="lg" onClick={handleDownload} loading={downloading} icon={Download}>
-            Download PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-sm border border-slate-300 transition"
+            >
+              <ExternalLink className="w-4 h-4 text-indigo-600" /> Open PDF
+            </a>
+            <Button size="lg" onClick={handleDownload} loading={downloading} icon={Download}>
+              Download PDF
+            </Button>
+          </div>
         </div>
 
         <p className="text-slate-800 text-sm font-semibold leading-relaxed">{note.description || 'No description provided.'}</p>
@@ -191,23 +206,32 @@ export const NoteDetails = () => {
 
       {/* Embedded PDF Document Viewer */}
       <div className="bg-white border border-slate-300 rounded-3xl overflow-hidden shadow-2xl space-y-3 p-4">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 text-xs text-slate-900 font-bold">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-slate-200 text-xs text-slate-900 font-bold">
           <span className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-600" /> Embedded PDF Preview
+            <FileText className="w-4 h-4 text-indigo-600" /> Document Preview
           </span>
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline font-extrabold"
-          >
-            Open in new tab &rarr;
-          </a>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setViewerMode(viewerMode === 'embed' ? 'google' : 'embed')}
+              className="text-xs text-indigo-700 hover:underline font-bold"
+            >
+              {viewerMode === 'embed' ? 'Switch to Cloud Viewer' : 'Switch to Direct Preview'}
+            </button>
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:underline font-extrabold flex items-center gap-1"
+            >
+              Open in new tab <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
 
-        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 relative">
           <iframe
-            src={`${pdfUrl}#toolbar=0`}
+            src={viewerMode === 'google' ? googleViewerUrl : `${pdfUrl}#toolbar=0`}
             title={note.title}
             className="w-full h-full border-none"
           />
