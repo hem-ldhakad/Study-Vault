@@ -6,8 +6,52 @@ import Badge from '../common/Badge';
 import { formatNumber } from '../../utils/formatters';
 import { SERVER_BASE_URL } from '../../utils/constants';
 
+const PASTEL_THEMES = [
+  {
+    bg: 'from-sky-50 via-indigo-50/70 to-blue-100/60 border-blue-200',
+    badge: 'bg-sky-100 text-sky-950 border-sky-300',
+    icon: 'text-indigo-600',
+    pdf: 'bg-indigo-600 text-white',
+  },
+  {
+    bg: 'from-emerald-50 via-teal-50/70 to-emerald-100/60 border-emerald-200',
+    badge: 'bg-emerald-100 text-emerald-950 border-emerald-300',
+    icon: 'text-emerald-600',
+    pdf: 'bg-emerald-600 text-white',
+  },
+  {
+    bg: 'from-purple-50 via-fuchsia-50/70 to-violet-100/60 border-purple-200',
+    badge: 'bg-purple-100 text-purple-950 border-purple-300',
+    icon: 'text-purple-600',
+    pdf: 'bg-purple-600 text-white',
+  },
+  {
+    bg: 'from-rose-50 via-pink-50/70 to-rose-100/60 border-rose-200',
+    badge: 'bg-rose-100 text-rose-950 border-rose-300',
+    icon: 'text-rose-600',
+    pdf: 'bg-rose-600 text-white',
+  },
+  {
+    bg: 'from-amber-50 via-yellow-50/70 to-amber-100/60 border-amber-200',
+    badge: 'bg-amber-100 text-amber-950 border-amber-300',
+    icon: 'text-amber-700',
+    pdf: 'bg-amber-600 text-white',
+  },
+];
+
+const getPastelTheme = (note) => {
+  const str = (note.category?.name || note.title || note._id || '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash += str.charCodeAt(i);
+  }
+  return PASTEL_THEMES[hash % PASTEL_THEMES.length];
+};
+
 export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
   const [imageError, setImageError] = useState(false);
+
+  const theme = getPastelTheme(note);
 
   const thumbnailSrc = note.thumbnail && !imageError
     ? `${SERVER_BASE_URL}${note.thumbnail.startsWith('/') ? note.thumbnail : `/${note.thumbnail}`}`
@@ -32,15 +76,15 @@ export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              /* Soft Light Pastel Book Cover Card Preview */
-              <div className="w-full h-full flex flex-col justify-between p-4 bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-50/70 border border-slate-200 text-slate-900 rounded-2xl shadow-inner relative overflow-hidden group-hover:scale-105 transition-transform duration-300">
-                <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-indigo-500/5 rounded-full blur-xl pointer-events-none"></div>
+              /* Dynamic Light Pastel Book Cover Card Preview */
+              <div className={`w-full h-full flex flex-col justify-between p-4 bg-gradient-to-br ${theme.bg} border text-slate-900 rounded-2xl shadow-inner relative overflow-hidden group-hover:scale-105 transition-transform duration-300`}>
+                <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/20 rounded-full blur-xl pointer-events-none"></div>
 
                 <div className="flex items-center justify-between z-10">
-                  <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-indigo-100/90 text-indigo-900 rounded-lg border border-indigo-200 shadow-xs">
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border shadow-xs ${theme.badge}`}>
                     {note.category?.name || 'Academic Note'}
                   </span>
-                  <BookOpen className="w-4 h-4 text-indigo-600" />
+                  <BookOpen className={`w-4 h-4 ${theme.icon}`} />
                 </div>
 
                 <div className="z-10 space-y-1 my-auto py-1">
@@ -52,9 +96,9 @@ export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-800 z-10 pt-1.5 border-t border-slate-200">
+                <div className="flex items-center justify-between text-[10px] font-bold text-slate-800 z-10 pt-1.5 border-t border-slate-200/60">
                   <span className="truncate max-w-[120px] font-bold text-slate-700">{note.chapter?.name || 'Chapter Guide'}</span>
-                  <span className="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider shadow-xs">PDF</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider shadow-xs ${theme.pdf}`}>PDF</span>
                 </div>
               </div>
             )}
