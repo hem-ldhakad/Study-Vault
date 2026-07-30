@@ -11,6 +11,7 @@ import {
   Share2,
   Check,
   ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import { noteService } from '../services/noteService';
 import { userService } from '../services/userService';
@@ -31,6 +32,7 @@ export const NoteDetails = () => {
   const [downloading, setDownloading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pdfLoadError, setPdfLoadError] = useState(false);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -76,6 +78,11 @@ export const NoteDetails = () => {
       setNote((prev) => (prev ? { ...prev, downloads: prev.downloads + 1 } : prev));
     } catch (err) {
       console.error('Download error', err);
+      // Fallback direct window open if blob download fails
+      if (note?.pdf) {
+        const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
+        window.open(`${SERVER_BASE_URL}${cleanPdfPath}`, '_blank');
+      }
     } finally {
       setDownloading(false);
     }
@@ -121,9 +128,10 @@ export const NoteDetails = () => {
     );
   }
 
-  // Ensure clean pdf URL without double slashes
-  const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
+  // Build clean PDF URL
+  const cleanPdfPath = note.pdf?.startsWith('/') ? note.pdf : `/${note.pdf || ''}`;
   const pdfUrl = `${SERVER_BASE_URL}${cleanPdfPath}`;
+  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto py-4">
@@ -202,7 +210,7 @@ export const NoteDetails = () => {
         </div>
       </div>
 
-      {/* Embedded PDF Document Viewer */}
+      {/* Embedded PDF Document Viewer Box */}
       <div className="bg-white border border-slate-300 rounded-3xl overflow-hidden shadow-2xl space-y-3 p-4">
         <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 text-xs text-slate-900 font-bold">
           <span className="flex items-center gap-2">
@@ -219,12 +227,47 @@ export const NoteDetails = () => {
           </a>
         </div>
 
-        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-          <iframe
-            src={`${pdfUrl}#toolbar=0`}
-            title={note.title}
-            className="w-full h-full border-none"
-          />
+        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 relative">
+          {!pdfLoadError ? (
+            <object
+              data={pdfUrl}
+              type="application/pdf"
+              className="w-full h-full rounded-2xl"
+              onError={() => setPdfLoadError(true)}
+            >
+              <iframe
+                src={googleViewerUrl}
+                title={note.title}
+                className="w-full h-full border-none rounded-2xl"
+                onError={() => setPdfLoadError(true)}
+              />
+            </object>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-slate-50 space-y-4">
+              <div className="p-4 bg-indigo-100 rounded-full text-indigo-600">
+                <FileText className="w-12 h-12" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-900">{note.title}</h3>
+                <p className="text-xs text-slate-700 font-bold max-w-md mx-auto">
+                  Click below to view or download the complete PDF note document directly.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black shadow-md transition inline-flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" /> View PDF in Tab
+                </a>
+                <Button size="sm" onClick={handleDownload} loading={downloading} icon={Download}>
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
