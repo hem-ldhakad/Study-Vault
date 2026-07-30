@@ -8,8 +8,8 @@ export const API_BASE_URL = rawApiUrl.endsWith('/api')
   ? rawApiUrl
   : rawApiUrl.replace(/\/+$/, '') + '/api';
 
-export const SERVER_BASE_URL = typeof window !== 'undefined' && import.meta.env.DEV
-  ? window.location.origin
+export const SERVER_BASE_URL = import.meta.env.DEV
+  ? 'http://localhost:5000'
   : (import.meta.env.VITE_API_BASE_URL
       ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')
       : 'http://localhost:5000');

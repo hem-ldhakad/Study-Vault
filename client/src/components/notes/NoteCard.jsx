@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Download, Bookmark, FileText, User } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -7,8 +7,10 @@ import { formatNumber } from '../../utils/formatters';
 import { SERVER_BASE_URL } from '../../utils/constants';
 
 export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
-  const thumbnailSrc = note.thumbnail
-    ? `${SERVER_BASE_URL}${note.thumbnail}`
+  const [imageError, setImageError] = useState(false);
+
+  const thumbnailSrc = note.thumbnail && !imageError
+    ? `${SERVER_BASE_URL}${note.thumbnail.startsWith('/') ? note.thumbnail : `/${note.thumbnail}`}`
     : null;
 
   return (
@@ -26,6 +28,7 @@ export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
               <img
                 src={thumbnailSrc}
                 alt={note.title}
+                onError={() => setImageError(true)}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
