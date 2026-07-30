@@ -23,7 +23,7 @@ export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
         {/* Full Card Link Wrapper */}
         <Link to={`/notes/${note._id}`} className="block">
           {/* Card Thumbnail Container */}
-          <div className="relative h-48 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 flex items-center justify-center overflow-hidden border-b border-slate-200 cursor-pointer p-4">
+          <div className="relative h-48 bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-200 cursor-pointer p-4">
             {thumbnailSrc ? (
               <img
                 src={thumbnailSrc}
@@ -32,29 +32,29 @@ export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              /* Vibrant Academic Book Cover Card Preview when image omitted */
-              <div className="w-full h-full flex flex-col justify-between p-3.5 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white rounded-2xl shadow-inner relative overflow-hidden group-hover:scale-105 transition-transform duration-300">
-                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+              /* Soft Light Pastel Book Cover Card Preview */
+              <div className="w-full h-full flex flex-col justify-between p-4 bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-50/70 border border-slate-200 text-slate-900 rounded-2xl shadow-inner relative overflow-hidden group-hover:scale-105 transition-transform duration-300">
+                <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-indigo-500/5 rounded-full blur-xl pointer-events-none"></div>
 
                 <div className="flex items-center justify-between z-10">
-                  <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-lg border border-white/30 text-white">
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-indigo-100/90 text-indigo-900 rounded-lg border border-indigo-200 shadow-xs">
                     {note.category?.name || 'Academic Note'}
                   </span>
-                  <BookOpen className="w-4 h-4 text-white/90" />
+                  <BookOpen className="w-4 h-4 text-indigo-600" />
                 </div>
 
                 <div className="z-10 space-y-1 my-auto py-1">
-                  <h4 className="text-sm font-black text-white line-clamp-2 leading-tight drop-shadow-sm">
+                  <h4 className="text-sm font-black text-slate-900 line-clamp-2 leading-tight">
                     {note.title}
                   </h4>
-                  <p className="text-[11px] font-bold text-indigo-100 truncate">
+                  <p className="text-[11px] font-bold text-slate-700 truncate">
                     {note.subject?.name || 'Study Guide'}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] font-bold text-white/90 z-10 pt-1 border-t border-white/20">
-                  <span className="truncate max-w-[120px]">{note.chapter?.name || 'Chapter Guide'}</span>
-                  <span className="bg-white/25 px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider">PDF</span>
+                <div className="flex items-center justify-between text-[10px] font-bold text-slate-800 z-10 pt-1.5 border-t border-slate-200">
+                  <span className="truncate max-w-[120px] font-bold text-slate-700">{note.chapter?.name || 'Chapter Guide'}</span>
+                  <span className="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider shadow-xs">PDF</span>
                 </div>
               </div>
             )}
