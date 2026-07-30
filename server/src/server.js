@@ -17,8 +17,13 @@ connectDB();
 
 const app = express();
 
-// Security HTTP headers
-app.use(helmet());
+// Security HTTP headers (allowing cross-origin iframe embedding for PDF viewer)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    frameguard: false,
+  })
+);
 
 // Flexible CORS Configuration for Development & Production
 const corsOptions = {
@@ -49,8 +54,16 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static directory for uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static directory for uploaded files with cross-origin headers for embedded PDF preview
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.join(__dirname, '../uploads'))
+);
 
 // API Routes Mount Points
 app.use('/api/auth', require('./routes/authRoutes'));
