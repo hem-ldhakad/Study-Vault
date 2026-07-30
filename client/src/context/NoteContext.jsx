@@ -85,12 +85,17 @@ export const NoteProvider = ({ children }) => {
     }
   }, [selectedCategory, selectedSubject, selectedChapter, searchQuery]);
 
-  // Initial load
+  // Initial load categories, subjects, chapters
   useEffect(() => {
     fetchCategories();
     fetchSubjects();
     fetchChapters();
   }, [fetchCategories, fetchSubjects, fetchChapters]);
+
+  // Automatically fetch notes whenever filters or search query change
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
   const clearFilters = () => {
     setSelectedCategory('');
