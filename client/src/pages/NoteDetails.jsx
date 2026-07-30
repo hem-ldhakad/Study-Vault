@@ -103,16 +103,16 @@ export const NoteDetails = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <Spinner size="lg" />
-        <p className="text-sm text-slate-400 font-medium animate-pulse">Loading note document...</p>
+        <p className="text-sm font-bold text-slate-800 animate-pulse">Loading note document...</p>
       </div>
     );
   }
 
   if (!note) {
     return (
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-12 text-center my-6">
-        <h3 className="text-xl font-bold text-slate-300 mb-2">Note Not Found</h3>
-        <p className="text-slate-500 text-sm mb-4">The requested note file may have been moved or removed by an admin.</p>
+      <div className="bg-white border border-slate-300 rounded-3xl p-12 text-center my-6 shadow-md">
+        <h3 className="text-xl font-extrabold text-slate-900 mb-2">Note Not Found</h3>
+        <p className="text-slate-800 text-sm font-semibold mb-4">The requested note file may have been moved or removed by an admin.</p>
         <Button variant="outline" onClick={() => navigate('/browse')} icon={ArrowLeft}>
           Back to Browse Notes
         </Button>
@@ -128,9 +128,9 @@ export const NoteDetails = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition"
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-900 hover:text-indigo-600 transition"
         >
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> Back to Notes
         </button>
 
         <div className="flex items-center gap-2">
@@ -149,11 +149,11 @@ export const NoteDetails = () => {
       </div>
 
       {/* Note Header Info Card */}
-      <div className="bg-slate-800/80 border border-slate-700/60 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
             {note.category?.name && <Badge variant="indigo">{note.category.name}</Badge>}
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100">{note.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{note.title}</h1>
           </div>
 
           <Button size="lg" onClick={handleDownload} loading={downloading} icon={Download}>
@@ -161,28 +161,28 @@ export const NoteDetails = () => {
           </Button>
         </div>
 
-        <p className="text-slate-300 text-sm leading-relaxed">{note.description || 'No description provided.'}</p>
+        <p className="text-slate-800 text-sm font-semibold leading-relaxed">{note.description || 'No description provided.'}</p>
 
         {/* Metadata stats row */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-700/50 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 text-xs text-slate-900 font-bold">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <User className="w-4 h-4 text-indigo-400" />
-              <span>Uploaded by <strong className="text-slate-200">{note.uploadedBy?.name || 'Admin'}</strong></span>
+              <User className="w-4 h-4 text-indigo-600" />
+              <span>Uploaded by <strong className="text-slate-900">{note.uploadedBy?.name || 'Admin'}</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-purple-400" />
+              <Calendar className="w-4 h-4 text-purple-600" />
               <span>{formatDate(note.createdAt)}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 font-semibold text-slate-300">
+          <div className="flex items-center gap-4 font-black">
             <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4 text-indigo-400" />
+              <Eye className="w-4 h-4 text-indigo-600" />
               <span>{formatNumber(note.views)} views</span>
             </div>
             <div className="flex items-center gap-1">
-              <Download className="w-4 h-4 text-emerald-400" />
+              <Download className="w-4 h-4 text-emerald-600" />
               <span>{formatNumber(note.downloads)} downloads</span>
             </div>
           </div>
@@ -190,22 +190,22 @@ export const NoteDetails = () => {
       </div>
 
       {/* Embedded PDF Document Viewer */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-3 p-4">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 text-xs text-slate-400">
-          <span className="flex items-center gap-2 font-medium">
-            <FileText className="w-4 h-4 text-indigo-400" /> Embedded PDF Preview
+      <div className="bg-white border border-slate-300 rounded-3xl overflow-hidden shadow-2xl space-y-3 p-4">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 text-xs text-slate-900 font-bold">
+          <span className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-indigo-600" /> Embedded PDF Preview
           </span>
           <a
             href={pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-400 hover:underline"
+            className="text-indigo-600 hover:underline font-extrabold"
           >
-            Open in new tab
+            Open in new tab &rarr;
           </a>
         </div>
 
-        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-950">
+        <div className="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
           <iframe
             src={`${pdfUrl}#toolbar=0`}
             title={note.title}
