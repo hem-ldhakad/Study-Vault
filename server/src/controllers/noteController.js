@@ -148,6 +148,8 @@ const downloadNote = asyncHandler(async (req, res, next) => {
   const directPath = path.join(__dirname, '../../', relativePath);
   const candidateNotes = path.join(__dirname, '../../uploads/notes', fileName);
   const candidateUploads = path.join(__dirname, '../../uploads', fileName);
+  const candidateCwdNotes = path.join(process.cwd(), 'server/uploads/notes', fileName);
+  const candidateCwdRoot = path.join(process.cwd(), 'uploads/notes', fileName);
 
   if (fs.existsSync(directPath) && fs.statSync(directPath).isFile()) {
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
@@ -162,6 +164,16 @@ const downloadNote = asyncHandler(async (req, res, next) => {
   if (fs.existsSync(candidateUploads) && fs.statSync(candidateUploads).isFile()) {
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     return res.download(candidateUploads, downloadFilename);
+  }
+
+  if (fs.existsSync(candidateCwdNotes) && fs.statSync(candidateCwdNotes).isFile()) {
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    return res.download(candidateCwdNotes, downloadFilename);
+  }
+
+  if (fs.existsSync(candidateCwdRoot) && fs.statSync(candidateCwdRoot).isFile()) {
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    return res.download(candidateCwdRoot, downloadFilename);
   }
 
   // Fallback: Generate and stream clean custom PDF for this note

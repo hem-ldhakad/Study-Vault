@@ -145,7 +145,7 @@ const findMatchingRealPDF = (filename = '', note = null) => {
       return path.join(notesDir, bestFile);
     }
 
-    return path.join(notesDir, candidateFiles[0]);
+    return null;
   } catch (err) {
     console.error('Error finding matching real PDF:', err.message);
     return null;
