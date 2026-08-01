@@ -209,24 +209,6 @@ export const NoteDetails = () => {
           </div>
         </div>
       </div>
-
-      {/* Embedded Interactive PDF Viewer Component Section */}
-      <div ref={viewerRef} className="space-y-4 pt-2">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            PDF Document Reader
-          </h2>
-          <span className="text-xs font-bold text-slate-500">Interactive Reader Mode</span>
-        </div>
-
-        <PdfViewer
-          pdfUrl={pdfUrl}
-          title={note.title}
-          onDownload={handleDownload}
-          downloading={downloading}
-        />
-      </div>
     </div>
   );
 };
