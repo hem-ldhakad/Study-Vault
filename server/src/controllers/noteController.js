@@ -117,13 +117,15 @@ const getNoteById = asyncHandler(async (req, res, next) => {
 
 // @desc    Download Note PDF & Increment Download Count
 // @route   GET /api/notes/:id/download
+// @desc    Download Note PDF Document
+// @route   GET /api/notes/:id/download
 // @access  Public
 const downloadNote = asyncHandler(async (req, res, next) => {
   const note = await Note.findByIdAndUpdate(
     req.params.id,
     { $inc: { downloads: 1 } },
     { new: true }
-  );
+  ).populate('category', 'name');
 
   if (!note) {
     return next(new AppError('Note not found', 404));
@@ -138,43 +140,32 @@ const downloadNote = asyncHandler(async (req, res, next) => {
     return res.redirect(note.pdf);
   }
 
-  const downloadFilename = `${note.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+  const downloadFilename = `${(note.title || 'Note_Document').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+  const fileName = path.basename(note.pdf);
 
-  // Resolve absolute path to PDF file
+  // Check exact file candidates on disk
   const relativePath = note.pdf.startsWith('/') ? note.pdf.substring(1) : note.pdf;
-  let filePath = path.join(__dirname, '../../', relativePath);
+  const directPath = path.join(__dirname, '../../', relativePath);
+  const candidateNotes = path.join(__dirname, '../../uploads/notes', fileName);
+  const candidateUploads = path.join(__dirname, '../../uploads', fileName);
 
-  // Fallback checking if file is not found at direct path
-  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-    const fileName = path.basename(note.pdf);
-    const candidateNotes = path.join(__dirname, '../../uploads/notes', fileName);
-    const candidateUploads = path.join(__dirname, '../../uploads', fileName);
-
-    if (fs.existsSync(candidateNotes) && fs.statSync(candidateNotes).isFile()) {
-      filePath = candidateNotes;
-    } else if (fs.existsSync(candidateUploads) && fs.statSync(candidateUploads).isFile()) {
-      filePath = candidateUploads;
-    } else {
-      const notesDir = path.join(__dirname, '../../uploads/notes');
-      if (fs.existsSync(notesDir)) {
-        const availablePdfs = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
-        if (availablePdfs.length > 0) {
-          filePath = path.join(notesDir, availablePdfs[0]);
-        } else {
-          return await serveOrGeneratePDF(req, res, fileName, note);
-        }
-      } else {
-        return await serveOrGeneratePDF(req, res, fileName, note);
-      }
-    }
+  if (fs.existsSync(directPath) && fs.statSync(directPath).isFile()) {
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    return res.download(directPath, downloadFilename);
   }
 
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-  return res.download(filePath, downloadFilename, (err) => {
-    if (err && !res.headersSent) {
-      return next(new AppError('Error delivering PDF document download', 500));
-    }
-  });
+  if (fs.existsSync(candidateNotes) && fs.statSync(candidateNotes).isFile()) {
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    return res.download(candidateNotes, downloadFilename);
+  }
+
+  if (fs.existsSync(candidateUploads) && fs.statSync(candidateUploads).isFile()) {
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    return res.download(candidateUploads, downloadFilename);
+  }
+
+  // Fallback: Generate and stream clean custom PDF for this note
+  return await serveOrGeneratePDF(req, res, fileName, note);
 });
 
 // @desc    Create Note (Admin Upload PDF & Thumbnail)
