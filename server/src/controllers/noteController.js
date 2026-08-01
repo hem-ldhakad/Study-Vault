@@ -138,6 +138,8 @@ const downloadNote = asyncHandler(async (req, res, next) => {
     return res.redirect(note.pdf);
   }
 
+  const downloadFilename = `${note.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+
   // Resolve absolute path to PDF file
   const relativePath = note.pdf.startsWith('/') ? note.pdf.substring(1) : note.pdf;
   let filePath = path.join(__dirname, '../../', relativePath);
@@ -169,8 +171,6 @@ const downloadNote = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const downloadFilename = `${note.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-  
   res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
