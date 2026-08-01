@@ -68,7 +68,63 @@ const getUserBookmarks = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get all registered users (Admin only)
+// @route   GET /api/users
+// @access  Private/Admin
+const getAllUsers = asyncHandler(async (req, res, next) => {
+  const users = await User.find().select('-password').sort({ createdAt: -1 });
+  res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: { users },
+  });
+});
+
+// @desc    Update user role (Admin only)
+// @route   PUT /api/users/:id/role
+// @access  Private/Admin
+const updateUserRole = asyncHandler(async (req, res, next) => {
+  const { role } = req.body;
+  if (!['user', 'admin'].includes(role)) {
+    return next(new AppError('Invalid user role', 400));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { role },
+    { new: true, runValidators: true }
+  ).select('-password');
+
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'User role updated successfully',
+    data: { user },
+  });
+});
+
+// @desc    Delete user (Admin only)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+const deleteUser = asyncHandler(async (req, res, next) => {
+  const user = await User.findByIdAndDelete(req.params.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'User deleted successfully',
+  });
+});
+
 module.exports = {
   toggleBookmark,
   getUserBookmarks,
+  getAllUsers,
+  updateUserRole,
+  deleteUser,
 };
