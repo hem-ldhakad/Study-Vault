@@ -72,11 +72,17 @@ const fixNotePdfPaths = async () => {
       }
 
       note.pdf = targetPdf;
+      const diskPath = path.join(notesDir, path.basename(targetPdf));
+      if (fs.existsSync(diskPath)) {
+        const fileBuf = fs.readFileSync(diskPath);
+        note.pdfData = fileBuf.toString('base64');
+        console.log(`Saved ${fileBuf.length} bytes of pdfData for "${note.title}"`);
+      }
       await note.save();
       console.log(`Updated note "${note.title}" -> pdf: ${targetPdf}`);
     }
 
-    console.log('✅ Successfully updated all note PDF paths in MongoDB Atlas!');
+    console.log('✅ Successfully updated all note PDF paths and pdfData in MongoDB Atlas!');
     process.exit(0);
   } catch (err) {
     console.error('❌ Error updating note PDF paths:', err.message);

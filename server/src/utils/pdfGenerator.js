@@ -220,7 +220,28 @@ const serveOrGeneratePDF = async (req, res, filename, note = null) => {
     return res.sendFile(realPdfPath);
   }
 
-  // 2. Dynamic PDF generation fallback if no real PDF files exist on disk
+  // 2. Check if MongoDB Atlas contains the original uploaded PDF Base64 string
+  if (filename) {
+    try {
+      const escapedFilename = filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const foundNoteWithData = await Note.findOne({ pdf: new RegExp(escapedFilename, 'i') })
+        .select('+pdfData')
+        .maxTimeMS(2000);
+      if (foundNoteWithData && foundNoteWithData.pdfData) {
+        const fileBuffer = Buffer.from(foundNoteWithData.pdfData, 'base64');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Length', fileBuffer.length);
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        return res.send(fileBuffer);
+      }
+    } catch (err) {
+      console.error('Error fetching note pdfData from database:', err.message);
+    }
+  }
+
+  // 3. Dynamic PDF generation fallback if no real PDF or pdfData exists
   let noteTitle = note?.title;
   let categoryName = note?.category?.name || note?.category;
   let noteDesc = note?.description;

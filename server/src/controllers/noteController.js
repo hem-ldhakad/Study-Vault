@@ -176,6 +176,18 @@ const downloadNote = asyncHandler(async (req, res, next) => {
     return res.download(candidateCwdRoot, downloadFilename);
   }
 
+  // Check if note has original uploaded PDF Base64 data in MongoDB Atlas
+  const noteWithData = await Note.findById(req.params.id).select('+pdfData');
+  if (noteWithData && noteWithData.pdfData) {
+    const fileBuffer = Buffer.from(noteWithData.pdfData, 'base64');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', fileBuffer.length);
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    return res.send(fileBuffer);
+  }
+
   // Fallback: Generate and stream clean custom PDF for this note
   return await serveOrGeneratePDF(req, res, fileName, note);
 });
@@ -196,6 +208,10 @@ const createNote = asyncHandler(async (req, res, next) => {
 
   const pdfFile = req.files.pdf[0];
   const pdfUrl = `/uploads/notes/${pdfFile.filename}`;
+  let pdfBase64Data = '';
+  if (fs.existsSync(pdfFile.path)) {
+    pdfBase64Data = fs.readFileSync(pdfFile.path).toString('base64');
+  }
 
   let thumbnailUrl = '';
   if (req.files.thumbnail && req.files.thumbnail.length > 0) {
@@ -219,6 +235,7 @@ const createNote = asyncHandler(async (req, res, next) => {
     tags: parsedTags,
     thumbnail: thumbnailUrl,
     pdf: pdfUrl,
+    pdfData: pdfBase64Data,
     uploadedBy: req.userId,
   });
 

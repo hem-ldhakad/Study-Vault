@@ -41,6 +41,11 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide the PDF document path or URL'],
     },
+    pdfData: {
+      type: String,
+      default: '',
+      select: false,
+    },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
