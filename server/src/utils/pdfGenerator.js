@@ -3,21 +3,39 @@ const path = require('path');
 const Note = require('../models/Note');
 
 /**
+ * Helper to locate uploads/notes directory regardless of CWD or container environment
+ */
+const getNotesDir = () => {
+  const candidates = [
+    path.join(__dirname, '../../uploads/notes'),
+    path.join(__dirname, '../uploads/notes'),
+    path.join(process.cwd(), 'server/uploads/notes'),
+    path.join(process.cwd(), 'uploads/notes'),
+  ];
+  for (const dir of candidates) {
+    if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
+      return dir;
+    }
+  }
+  return candidates[0];
+};
+
+/**
  * Find the best matching real PDF file on disk in server/uploads/notes
  */
 const findMatchingRealPDF = (filename = '', note = null) => {
   try {
-    const uploadsDir = path.join(__dirname, '../../uploads');
-    const notesDir = path.join(uploadsDir, 'notes');
+    const notesDir = getNotesDir();
+    const uploadsDir = path.dirname(notesDir);
 
     if (filename) {
       const cleanName = path.basename(filename);
-      // 1. Direct exact match in uploads/notes/
+      // 1. Direct exact match in notesDir
       const directNotesPath = path.join(notesDir, cleanName);
       if (fs.existsSync(directNotesPath) && fs.statSync(directNotesPath).isFile()) {
         return directNotesPath;
       }
-      // 2. Direct exact match in uploads/
+      // 2. Direct exact match in uploadsDir
       const directUploadsPath = path.join(uploadsDir, cleanName);
       if (fs.existsSync(directUploadsPath) && fs.statSync(directUploadsPath).isFile()) {
         return directUploadsPath;
