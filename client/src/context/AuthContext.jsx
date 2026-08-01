@@ -4,7 +4,14 @@ import { authService } from '../services/authService';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
 
@@ -13,6 +20,8 @@ export const AuthProvider = ({ children }) => {
     const fetchCurrentUser = async () => {
       const token = localStorage.getItem('accessToken');
       if (!token) {
+        setUser(null);
+        localStorage.removeItem('user');
         setLoading(false);
         return;
       }
@@ -21,12 +30,17 @@ export const AuthProvider = ({ children }) => {
         const response = await authService.getMe();
         if (response?.data?.user) {
           setUser(response.data.user);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
         }
       } catch (err) {
         console.error('Failed to load user profile', err);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        setUser(null);
+        // Only wipe auth session if server explicitly returns 401 Unauthorized
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -37,7 +51,7 @@ export const AuthProvider = ({ children }) => {
 
   const handleNetworkError = (error) => {
     if (error.message === 'Network Error' || !error.response) {
-      return 'Network Error: Cannot connect to server. Make sure the backend server is running on port 5000 (npm run dev from root).';
+      return 'Network Error: Cannot connect to server. Make sure backend is active.';
     }
     return error.response?.data?.message || error.message;
   };
@@ -49,6 +63,7 @@ export const AuthProvider = ({ children }) => {
       const { user: userData, accessToken, refreshToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true, user: userData };
     } catch (error) {
@@ -65,6 +80,7 @@ export const AuthProvider = ({ children }) => {
       const { user: userData, accessToken, refreshToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true, user: userData };
     } catch (error) {
@@ -82,6 +98,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
       setUser(null);
     }
   };

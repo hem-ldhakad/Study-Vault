@@ -1,13 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../utils/constants';
 
-// Get API base URL
-let rawBaseURL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api');
-
-// Auto-fix: Ensure base URL ends with /api if an absolute URL is provided without /api
-let baseURL = rawBaseURL;
-if (baseURL !== '/api' && !baseURL.endsWith('/api') && !baseURL.endsWith('/api/')) {
-  baseURL = baseURL.replace(/\/+$/, '') + '/api';
-}
+const baseURL = API_BASE_URL;
 
 const api = axios.create({
   baseURL,
@@ -33,7 +27,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest?.url?.includes('/auth/refresh-token') &&
+      !originalRequest?.url?.includes('/auth/login')
+    ) {
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
@@ -46,7 +45,7 @@ api.interceptors.response.use(
         } catch (refreshError) {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
+          localStorage.removeItem('user');
         }
       }
     }
