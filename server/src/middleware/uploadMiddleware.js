@@ -12,7 +12,16 @@ if (!fs.existsSync(uploadDir)) {
 // Multer Storage Configuration
 const storage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, uploadDir);
+    let targetSubDir = uploadDir;
+    if (file.fieldname === 'pdf') {
+      targetSubDir = path.join(uploadDir, 'notes');
+    } else if (file.fieldname === 'thumbnail') {
+      targetSubDir = path.join(uploadDir, 'thumbnails');
+    }
+    if (!fs.existsSync(targetSubDir)) {
+      fs.mkdirSync(targetSubDir, { recursive: true });
+    }
+    cb(null, targetSubDir);
   },
   filename(req, file, cb) {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;

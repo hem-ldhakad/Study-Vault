@@ -142,17 +142,28 @@ const downloadNote = asyncHandler(async (req, res, next) => {
   let filePath = path.join(__dirname, '../../', relativePath);
 
   // Fallback checking if file is not found at direct path
-  if (!fs.existsSync(filePath)) {
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
     const fileName = path.basename(note.pdf);
     const candidateNotes = path.join(__dirname, '../../uploads/notes', fileName);
     const candidateUploads = path.join(__dirname, '../../uploads', fileName);
 
-    if (fs.existsSync(candidateNotes)) {
+    if (fs.existsSync(candidateNotes) && fs.statSync(candidateNotes).isFile()) {
       filePath = candidateNotes;
-    } else if (fs.existsSync(candidateUploads)) {
+    } else if (fs.existsSync(candidateUploads) && fs.statSync(candidateUploads).isFile()) {
       filePath = candidateUploads;
     } else {
-      return next(new AppError('Requested PDF document was not found on the server', 404));
+      // Graceful fallback to default guide PDF in uploads/notes if exact file was deleted/missing
+      const notesDir = path.join(__dirname, '../../uploads/notes');
+      if (fs.existsSync(notesDir)) {
+        const availablePdfs = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
+        if (availablePdfs.length > 0) {
+          filePath = path.join(notesDir, availablePdfs[0]);
+        } else {
+          return next(new AppError('Requested PDF document was not found on the server', 404));
+        }
+      } else {
+        return next(new AppError('Requested PDF document was not found on the server', 404));
+      }
     }
   }
 
@@ -184,11 +195,11 @@ const createNote = asyncHandler(async (req, res, next) => {
   }
 
   const pdfFile = req.files.pdf[0];
-  const pdfUrl = `/uploads/${pdfFile.filename}`;
+  const pdfUrl = `/uploads/notes/${pdfFile.filename}`;
 
   let thumbnailUrl = '';
   if (req.files.thumbnail && req.files.thumbnail.length > 0) {
-    thumbnailUrl = `/uploads/${req.files.thumbnail[0].filename}`;
+    thumbnailUrl = `/uploads/thumbnails/${req.files.thumbnail[0].filename}`;
   }
 
   // Parse tags

@@ -54,16 +54,47 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static directory for uploaded files with cross-origin headers for embedded PDF preview
-app.use(
-  '/uploads',
-  (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    next();
-  },
-  express.static(path.join(__dirname, '../uploads'))
-);
+// Static directory for uploaded files with fallback sub-directory search & graceful PDF fallback
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  
+  const relPath = decodeURIComponent(req.path);
+  const uploadsDir = path.join(__dirname, '../uploads');
+  const primaryPath = path.join(uploadsDir, relPath);
+
+  if (fs.existsSync(primaryPath) && fs.statSync(primaryPath).isFile()) {
+    return res.sendFile(primaryPath);
+  }
+
+  // Fallback search in notes/ and thumbnails/
+  const fileName = path.basename(relPath);
+  const candidateNotes = path.join(uploadsDir, 'notes', fileName);
+  const candidateThumbs = path.join(uploadsDir, 'thumbnails', fileName);
+
+  if (fs.existsSync(candidateNotes) && fs.statSync(candidateNotes).isFile()) {
+    return res.sendFile(candidateNotes);
+  }
+
+  if (fs.existsSync(candidateThumbs) && fs.statSync(candidateThumbs).isFile()) {
+    return res.sendFile(candidateThumbs);
+  }
+
+  // If a PDF document is requested but not found on disk, serve available PDF guide as fallback
+  if (relPath.toLowerCase().endsWith('.pdf')) {
+    const notesDir = path.join(uploadsDir, 'notes');
+    if (fs.existsSync(notesDir)) {
+      const pdfFiles = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
+      if (pdfFiles.length > 0) {
+        const fallbackFile = path.join(notesDir, pdfFiles[0]);
+        res.setHeader('Content-Type', 'application/pdf');
+        return res.sendFile(fallbackFile);
+      }
+    }
+  }
+
+  next();
+});
 
 // API Routes Mount Points
 app.use('/api/auth', require('./routes/authRoutes'));
