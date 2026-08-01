@@ -115,6 +115,14 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 
 // Health check endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'StudyVault Express Backend running smoothly',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -138,12 +146,9 @@ const server = app.listen(PORT, () => {
   console.log(`[StudyVault Backend] Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
-// Handle unhandled promise rejections
+// Handle unhandled promise rejections without crashing the server process in production
 process.on('unhandledRejection', (err) => {
-  console.error('[Unhandled Rejection] Shutting down...', err.name, err.message);
-  server.close(() => {
-    process.exit(1);
-  });
+  console.error('[Unhandled Rejection]', err?.name || 'Error', err?.message || err);
 });
 
 module.exports = app;
