@@ -3,6 +3,7 @@ const path = require('path');
 const Note = require('../models/Note');
 const AppError = require('../utils/appError');
 const asyncHandler = require('../utils/asyncHandler');
+const { serveOrGeneratePDF } = require('../utils/pdfGenerator');
 
 // @desc    Get all notes (Browse with Search, Filter & Pagination)
 // @route   GET /api/notes
@@ -152,17 +153,18 @@ const downloadNote = asyncHandler(async (req, res, next) => {
     } else if (fs.existsSync(candidateUploads) && fs.statSync(candidateUploads).isFile()) {
       filePath = candidateUploads;
     } else {
-      // Graceful fallback to default guide PDF in uploads/notes if exact file was deleted/missing
       const notesDir = path.join(__dirname, '../../uploads/notes');
       if (fs.existsSync(notesDir)) {
         const availablePdfs = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
         if (availablePdfs.length > 0) {
           filePath = path.join(notesDir, availablePdfs[0]);
         } else {
-          return next(new AppError('Requested PDF document was not found on the server', 404));
+          res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+          return await serveOrGeneratePDF(req, res, fileName, note);
         }
       } else {
-        return next(new AppError('Requested PDF document was not found on the server', 404));
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+        return await serveOrGeneratePDF(req, res, fileName, note);
       }
     }
   }

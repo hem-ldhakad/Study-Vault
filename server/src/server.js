@@ -54,8 +54,10 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static directory for uploaded files with fallback sub-directory search & graceful PDF fallback
-app.use('/uploads', (req, res, next) => {
+const { serveOrGeneratePDF } = require('./utils/pdfGenerator');
+
+// Static directory for uploaded files with automatic dynamic PDF generation fallback
+app.use('/uploads', async (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   
@@ -80,17 +82,19 @@ app.use('/uploads', (req, res, next) => {
     return res.sendFile(candidateThumbs);
   }
 
-  // If a PDF document is requested but not found on disk, serve available PDF guide as fallback
+  // If a PDF document is requested but not found anywhere on disk, automatically generate and stream it
   if (relPath.toLowerCase().endsWith('.pdf')) {
     const notesDir = path.join(uploadsDir, 'notes');
     if (fs.existsSync(notesDir)) {
       const pdfFiles = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
       if (pdfFiles.length > 0) {
-        const fallbackFile = path.join(notesDir, pdfFiles[0]);
         res.setHeader('Content-Type', 'application/pdf');
-        return res.sendFile(fallbackFile);
+        res.setHeader('Content-Disposition', 'inline');
+        return res.sendFile(path.join(notesDir, pdfFiles[0]));
       }
     }
+
+    return await serveOrGeneratePDF(req, res, fileName);
   }
 
   next();

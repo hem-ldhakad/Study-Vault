@@ -14,6 +14,11 @@ client/dist/
 # Uploaded Files
 server/uploads/*
 !server/uploads/.gitkeep
+!server/uploads/notes/
+!server/uploads/notes/**
+!server/uploads/thumbnails/
+!server/uploads/thumbnails/**
+!server/uploads/*.pdf
 
 # Operating System Files
 .DS_Store
