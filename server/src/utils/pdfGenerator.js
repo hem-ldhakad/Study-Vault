@@ -66,14 +66,16 @@ const serveOrGeneratePDF = async (req, res, filename, note = null) => {
     // Try finding note in database by pdf path matching filename with safely escaped regex
     try {
       const escapedFilename = filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const foundNote = await Note.findOne({ pdf: new RegExp(escapedFilename, 'i') }).populate('category', 'name');
+      const foundNote = await Note.findOne({ pdf: new RegExp(escapedFilename, 'i') })
+        .populate('category', 'name')
+        .maxTimeMS(2000);
       if (foundNote) {
         noteTitle = foundNote.title;
         categoryName = foundNote.category?.name || 'Academic Note';
         noteDesc = foundNote.description;
       }
     } catch (err) {
-      console.error('Error matching note for pdf generation:', err);
+      console.error('Error matching note for pdf generation:', err.message);
     }
   }
 
