@@ -176,14 +176,6 @@ export const NoteDetails = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-sm border border-indigo-200 transition shadow-sm"
-            >
-              <ExternalLink className="w-4 h-4 text-indigo-600" /> Open PDF Document
-            </a>
             <Button size="lg" onClick={handleDownload} loading={downloading} icon={Download}>
               Download PDF
             </Button>

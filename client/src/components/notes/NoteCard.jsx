@@ -146,22 +146,13 @@ export const NoteCard = ({ note, onBookmarkToggle, isBookmarked = false }) => {
               {/* Hover Quick Action Buttons Overlay */}
               <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 p-4 z-10">
                 <button
-                  onClick={handleOpenPdfModal}
-                  className="px-3.5 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg transition flex items-center gap-1.5 transform hover:scale-105"
-                  title="Quick View PDF"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open PDF</span>
-                </button>
-
-                <button
                   onClick={handleQuickDownload}
                   disabled={downloading}
-                  className="px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-extrabold shadow-lg transition flex items-center gap-1.5 transform hover:scale-105"
+                  className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg transition flex items-center gap-2 transform hover:scale-105"
                   title="Direct Download PDF"
                 >
-                  <Download className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{downloading ? 'Saving...' : 'Download'}</span>
+                  <Download className="w-4 h-4 text-emerald-400" />
+                  <span>{downloading ? 'Saving...' : 'Download PDF'}</span>
                 </button>
               </div>
 
