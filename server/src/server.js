@@ -10,7 +10,8 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const AppError = require('./utils/appError');
 
-// Load environment variables
+// Load environment variables (from server/.env or root .env)
+dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
 // Connect to MongoDB Atlas / Database
@@ -142,7 +143,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`[StudyVault Backend] Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
