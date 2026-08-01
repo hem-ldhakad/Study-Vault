@@ -92,12 +92,9 @@ app.use('/uploads', async (req, res, next) => {
         return res.sendFile(candidateNotes);
       }
 
-      const notesDir = path.join(uploadsDir, 'notes');
-      if (fs.existsSync(notesDir)) {
-        const pdfFiles = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
-        if (pdfFiles.length > 0) {
-          return res.sendFile(path.join(notesDir, pdfFiles[0]));
-        }
+      const candidateRoot = path.join(uploadsDir, fileName);
+      if (fs.existsSync(candidateRoot) && fs.statSync(candidateRoot).isFile()) {
+        return res.sendFile(candidateRoot);
       }
 
       return await serveOrGeneratePDF(req, res, fileName);
