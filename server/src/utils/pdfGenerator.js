@@ -21,7 +21,7 @@ const getNotesDir = () => {
 };
 
 /**
- * Find the best matching real PDF file on disk in server/uploads/notes
+ * Find the best matching real PDF file on disk in server/uploads/notes (preferring full guides > 500 bytes)
  */
 const findMatchingRealPDF = (filename = '', note = null) => {
   try {
@@ -30,23 +30,39 @@ const findMatchingRealPDF = (filename = '', note = null) => {
 
     if (filename) {
       const cleanName = path.basename(filename);
-      // 1. Direct exact match in notesDir
       const directNotesPath = path.join(notesDir, cleanName);
       if (fs.existsSync(directNotesPath) && fs.statSync(directNotesPath).isFile()) {
-        return directNotesPath;
+        const stats = fs.statSync(directNotesPath);
+        if (stats.size > 500) {
+          return directNotesPath;
+        }
       }
-      // 2. Direct exact match in uploadsDir
       const directUploadsPath = path.join(uploadsDir, cleanName);
       if (fs.existsSync(directUploadsPath) && fs.statSync(directUploadsPath).isFile()) {
-        return directUploadsPath;
+        const stats = fs.statSync(directUploadsPath);
+        if (stats.size > 500) {
+          return directUploadsPath;
+        }
       }
     }
 
     if (!fs.existsSync(notesDir)) return null;
-    const availableFiles = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
+    let availableFiles = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
     if (availableFiles.length === 0) return null;
 
-    // Search query constructed from filename and note details
+    // Filter to full study guide PDFs (> 500 bytes)
+    const fullGuideFiles = availableFiles.filter((f) => {
+      try {
+        const stats = fs.statSync(path.join(notesDir, f));
+        return stats.size > 500;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    const candidateFiles = fullGuideFiles.length > 0 ? fullGuideFiles : availableFiles;
+
+    // Search terms from filename, note title, subject, category
     const searchTerms = [
       filename.toLowerCase(),
       (note?.title || '').toLowerCase(),
@@ -56,36 +72,67 @@ const findMatchingRealPDF = (filename = '', note = null) => {
     ].join(' ');
 
     let bestFile = null;
-    let maxScore = 0;
+    let maxScore = -1;
 
-    for (const file of availableFiles) {
+    for (const file of candidateFiles) {
       const fileLower = file.toLowerCase();
       let score = 0;
 
-      // Keyword matching against available study guide PDFs
-      if ((searchTerms.includes('dom') || searchTerms.includes('event')) && (fileLower.includes('dom') || fileLower.includes('event') || fileLower.includes('js'))) score += 15;
-      if (searchTerms.includes('css') && fileLower.includes('css')) score += 15;
-      if (searchTerms.includes('html') && fileLower.includes('html')) score += 15;
-      if (searchTerms.includes('react') && fileLower.includes('react')) score += 15;
-      if (searchTerms.includes('node') && fileLower.includes('node')) score += 15;
-      if (searchTerms.includes('mongo') && fileLower.includes('mongo')) score += 15;
-      if (searchTerms.includes('mysql') && fileLower.includes('mysql')) score += 15;
-      if (searchTerms.includes('git') && fileLower.includes('git')) score += 15;
-      if (searchTerms.includes('dsa') && fileLower.includes('dsa')) score += 15;
-      if (searchTerms.includes('docker') && fileLower.includes('docker')) score += 15;
-      if (searchTerms.includes('vite') && fileLower.includes('vite')) score += 15;
-      if (searchTerms.includes('next') && fileLower.includes('next')) score += 15;
-      if (searchTerms.includes('python') && fileLower.includes('python')) score += 15;
-      if (searchTerms.includes('js') || searchTerms.includes('javascript')) {
-        if (fileLower.includes('js') || fileLower.includes('javascript')) score += 10;
+      // Match core academic subjects to rich guide PDFs
+      if (searchTerms.includes('js') || searchTerms.includes('javascript') || searchTerms.includes('dom') || searchTerms.includes('event')) {
+        if (fileLower === 'javascript_guide.pdf') score += 50;
+        else if (fileLower.includes('javascript') || fileLower.includes('js')) score += 20;
       }
-
-      const fileBase = fileLower.replace(/\.pdf$/, '');
-      const parts = fileBase.split(/[^a-z0-9]/);
-      for (const part of parts) {
-        if (part.length > 2 && searchTerms.includes(part)) {
-          score += 3;
-        }
+      if (searchTerms.includes('css') || searchTerms.includes('style') || searchTerms.includes('box')) {
+        if (fileLower.includes('css') || fileLower.includes('typography')) score += 50;
+      }
+      if (searchTerms.includes('html')) {
+        if (fileLower === 'html_guide.pdf') score += 50;
+        else if (fileLower.includes('html')) score += 20;
+      }
+      if (searchTerms.includes('react')) {
+        if (fileLower === 'react_guide.pdf') score += 50;
+        else if (fileLower.includes('react')) score += 20;
+      }
+      if (searchTerms.includes('node') || searchTerms.includes('express')) {
+        if (fileLower === 'nodejs_guide.pdf') score += 50;
+        else if (fileLower.includes('node')) score += 20;
+      }
+      if (searchTerms.includes('mongo')) {
+        if (fileLower === 'mongodb_guide.pdf') score += 50;
+        else if (fileLower.includes('mongo')) score += 20;
+      }
+      if (searchTerms.includes('mysql') || searchTerms.includes('sql') || searchTerms.includes('query')) {
+        if (fileLower === 'mysql_guide.pdf') score += 50;
+        else if (fileLower.includes('mysql')) score += 20;
+      }
+      if (searchTerms.includes('git')) {
+        if (fileLower === 'git_guide.pdf') score += 50;
+        else if (fileLower.includes('git')) score += 20;
+      }
+      if (searchTerms.includes('dsa') || searchTerms.includes('algorithm') || searchTerms.includes('structure')) {
+        if (fileLower === 'dsa_guide.pdf') score += 50;
+        else if (fileLower.includes('dsa')) score += 20;
+      }
+      if (searchTerms.includes('docker') || searchTerms.includes('container')) {
+        if (fileLower === 'docker_guide.pdf') score += 50;
+        else if (fileLower.includes('docker')) score += 20;
+      }
+      if (searchTerms.includes('vite')) {
+        if (fileLower === 'vite_guide.pdf') score += 50;
+        else if (fileLower.includes('vite')) score += 20;
+      }
+      if (searchTerms.includes('next')) {
+        if (fileLower === 'nextjs_guide.pdf') score += 50;
+        else if (fileLower.includes('next')) score += 20;
+      }
+      if (searchTerms.includes('tailwind')) {
+        if (fileLower === 'tailwind_guide.pdf') score += 50;
+        else if (fileLower.includes('tailwind')) score += 20;
+      }
+      if (searchTerms.includes('python')) {
+        if (fileLower === 'python_guide.pdf') score += 50;
+        else if (fileLower.includes('python')) score += 20;
       }
 
       if (score > maxScore) {
@@ -94,12 +141,11 @@ const findMatchingRealPDF = (filename = '', note = null) => {
       }
     }
 
-    if (bestFile) {
+    if (bestFile && maxScore > 0) {
       return path.join(notesDir, bestFile);
     }
 
-    // Default fallback to first available real PDF if any exist
-    return path.join(notesDir, availableFiles[0]);
+    return path.join(notesDir, candidateFiles[0]);
   } catch (err) {
     console.error('Error finding matching real PDF:', err.message);
     return null;
