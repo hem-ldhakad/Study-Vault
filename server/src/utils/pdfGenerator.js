@@ -1,4 +1,92 @@
+const fs = require('fs');
+const path = require('path');
 const Note = require('../models/Note');
+
+/**
+ * Find the best matching real PDF file on disk in server/uploads/notes
+ */
+const findMatchingRealPDF = (filename = '', note = null) => {
+  try {
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    const notesDir = path.join(uploadsDir, 'notes');
+
+    if (filename) {
+      const cleanName = path.basename(filename);
+      // 1. Direct exact match in uploads/notes/
+      const directNotesPath = path.join(notesDir, cleanName);
+      if (fs.existsSync(directNotesPath) && fs.statSync(directNotesPath).isFile()) {
+        return directNotesPath;
+      }
+      // 2. Direct exact match in uploads/
+      const directUploadsPath = path.join(uploadsDir, cleanName);
+      if (fs.existsSync(directUploadsPath) && fs.statSync(directUploadsPath).isFile()) {
+        return directUploadsPath;
+      }
+    }
+
+    if (!fs.existsSync(notesDir)) return null;
+    const availableFiles = fs.readdirSync(notesDir).filter((f) => f.endsWith('.pdf'));
+    if (availableFiles.length === 0) return null;
+
+    // Search query constructed from filename and note details
+    const searchTerms = [
+      filename.toLowerCase(),
+      (note?.title || '').toLowerCase(),
+      (note?.description || '').toLowerCase(),
+      (note?.subject?.name || '').toLowerCase(),
+      (note?.category?.name || '').toLowerCase(),
+    ].join(' ');
+
+    let bestFile = null;
+    let maxScore = 0;
+
+    for (const file of availableFiles) {
+      const fileLower = file.toLowerCase();
+      let score = 0;
+
+      // Keyword matching against available study guide PDFs
+      if ((searchTerms.includes('dom') || searchTerms.includes('event')) && (fileLower.includes('dom') || fileLower.includes('event') || fileLower.includes('js'))) score += 15;
+      if (searchTerms.includes('css') && fileLower.includes('css')) score += 15;
+      if (searchTerms.includes('html') && fileLower.includes('html')) score += 15;
+      if (searchTerms.includes('react') && fileLower.includes('react')) score += 15;
+      if (searchTerms.includes('node') && fileLower.includes('node')) score += 15;
+      if (searchTerms.includes('mongo') && fileLower.includes('mongo')) score += 15;
+      if (searchTerms.includes('mysql') && fileLower.includes('mysql')) score += 15;
+      if (searchTerms.includes('git') && fileLower.includes('git')) score += 15;
+      if (searchTerms.includes('dsa') && fileLower.includes('dsa')) score += 15;
+      if (searchTerms.includes('docker') && fileLower.includes('docker')) score += 15;
+      if (searchTerms.includes('vite') && fileLower.includes('vite')) score += 15;
+      if (searchTerms.includes('next') && fileLower.includes('next')) score += 15;
+      if (searchTerms.includes('python') && fileLower.includes('python')) score += 15;
+      if (searchTerms.includes('js') || searchTerms.includes('javascript')) {
+        if (fileLower.includes('js') || fileLower.includes('javascript')) score += 10;
+      }
+
+      const fileBase = fileLower.replace(/\.pdf$/, '');
+      const parts = fileBase.split(/[^a-z0-9]/);
+      for (const part of parts) {
+        if (part.length > 2 && searchTerms.includes(part)) {
+          score += 3;
+        }
+      }
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestFile = file;
+      }
+    }
+
+    if (bestFile) {
+      return path.join(notesDir, bestFile);
+    }
+
+    // Default fallback to first available real PDF if any exist
+    return path.join(notesDir, availableFiles[0]);
+  } catch (err) {
+    console.error('Error finding matching real PDF:', err.message);
+    return null;
+  }
+};
 
 /**
  * Generate a clean, 100% valid PDF Buffer on the fly for any note
@@ -55,15 +143,25 @@ ET`;
 };
 
 /**
- * Express middleware helper to serve or auto-generate PDF
+ * Express middleware helper to serve real PDF or auto-generate fallback PDF
  */
 const serveOrGeneratePDF = async (req, res, filename, note = null) => {
+  // 1. Prioritize serving actual real PDF file from disk
+  const realPdfPath = findMatchingRealPDF(filename, note);
+  if (realPdfPath && fs.existsSync(realPdfPath) && fs.statSync(realPdfPath).isFile()) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    return res.sendFile(realPdfPath);
+  }
+
+  // 2. Dynamic PDF generation fallback if no real PDF files exist on disk
   let noteTitle = note?.title;
   let categoryName = note?.category?.name || note?.category;
   let noteDesc = note?.description;
 
   if (!noteTitle && filename) {
-    // Try finding note in database by pdf path matching filename with safely escaped regex
     try {
       const escapedFilename = filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const foundNote = await Note.findOne({ pdf: new RegExp(escapedFilename, 'i') })
@@ -80,7 +178,6 @@ const serveOrGeneratePDF = async (req, res, filename, note = null) => {
   }
 
   if (!noteTitle && filename) {
-    // Format human-readable title from filename
     noteTitle = filename
       .replace(/-\d{10,}-\d+/g, '')
       .replace(/\.pdf$/i, '')
@@ -97,6 +194,7 @@ const serveOrGeneratePDF = async (req, res, filename, note = null) => {
 };
 
 module.exports = {
+  findMatchingRealPDF,
   generateDynamicPDF,
   serveOrGeneratePDF,
 };
