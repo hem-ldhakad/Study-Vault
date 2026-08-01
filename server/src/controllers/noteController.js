@@ -128,16 +128,45 @@ const downloadNote = asyncHandler(async (req, res, next) => {
     return next(new AppError('Note not found', 404));
   }
 
+  if (!note.pdf) {
+    return next(new AppError('No PDF associated with this note', 404));
+  }
+
+  // Handle external HTTP/HTTPS URLs
+  if (note.pdf.startsWith('http://') || note.pdf.startsWith('https://')) {
+    return res.redirect(note.pdf);
+  }
+
   // Resolve absolute path to PDF file
   const relativePath = note.pdf.startsWith('/') ? note.pdf.substring(1) : note.pdf;
-  const filePath = path.join(__dirname, '../../', relativePath);
+  let filePath = path.join(__dirname, '../../', relativePath);
 
+  // Fallback checking if file is not found at direct path
   if (!fs.existsSync(filePath)) {
-    return next(new AppError('Requested PDF file was not found on the server', 404));
+    const fileName = path.basename(note.pdf);
+    const candidateNotes = path.join(__dirname, '../../uploads/notes', fileName);
+    const candidateUploads = path.join(__dirname, '../../uploads', fileName);
+
+    if (fs.existsSync(candidateNotes)) {
+      filePath = candidateNotes;
+    } else if (fs.existsSync(candidateUploads)) {
+      filePath = candidateUploads;
+    } else {
+      return next(new AppError('Requested PDF document was not found on the server', 404));
+    }
   }
 
   const downloadFilename = `${note.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-  res.download(filePath, downloadFilename);
+  
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+  
+  res.download(filePath, downloadFilename, (err) => {
+    if (err && !res.headersSent) {
+      return next(new AppError('Error delivering PDF document download', 500));
+    }
+  });
 });
 
 // @desc    Create Note (Admin Upload PDF & Thumbnail)

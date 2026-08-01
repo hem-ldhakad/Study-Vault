@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Download,
@@ -10,6 +10,7 @@ import {
   Share2,
   Check,
   ExternalLink,
+  BookOpen,
 } from 'lucide-react';
 import { noteService } from '../services/noteService';
 import { userService } from '../services/userService';
@@ -17,13 +18,15 @@ import { useAuth } from '../hooks/useAuth';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import Spinner from '../components/common/Spinner';
-import { formatDate, formatNumber } from '../utils/formatters';
+import PdfViewer from '../components/notes/PdfViewer';
+import { formatDate, formatNumber, getPDFUrl } from '../utils/formatters';
 import { SERVER_BASE_URL } from '../utils/constants';
 
 export const NoteDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const viewerRef = useRef(null);
 
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,21 +63,28 @@ export const NoteDetails = () => {
   }, [id, isAuthenticated]);
 
   const handleDownload = async () => {
+    if (!note) return;
     setDownloading(true);
     try {
       const blobData = await noteService.downloadNote(id);
-      const url = window.URL.createObjectURL(new Blob([blobData]));
+      const blob = new Blob([blobData], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${note.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+      const filename = `${(note.title || 'Note_Document').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
       // Increment local download counter display
-      setNote((prev) => (prev ? { ...prev, downloads: prev.downloads + 1 } : prev));
+      setNote((prev) => (prev ? { ...prev, downloads: (prev.downloads || 0) + 1 } : prev));
     } catch (err) {
-      console.error('Download error', err);
+      console.error('Download blob error, using fallback direct download', err);
+      // Fallback: direct window download trigger
+      const directPdfUrl = getPDFUrl(note.pdf, SERVER_BASE_URL);
+      window.open(directPdfUrl, '_blank');
     } finally {
       setDownloading(false);
     }
@@ -99,6 +109,12 @@ export const NoteDetails = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const scrollToViewer = () => {
+    if (viewerRef.current) {
+      viewerRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -120,9 +136,7 @@ export const NoteDetails = () => {
     );
   }
 
-  // Build clean URL for PDF
-  const cleanPdfPath = note.pdf.startsWith('/') ? note.pdf : `/${note.pdf}`;
-  const pdfUrl = `${SERVER_BASE_URL}${cleanPdfPath}`;
+  const pdfUrl = getPDFUrl(note.pdf, SERVER_BASE_URL);
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto py-4">
@@ -130,7 +144,7 @@ export const NoteDetails = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-900 hover:text-indigo-600 transition"
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-200 hover:text-indigo-600 transition"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Notes
         </button>
@@ -151,11 +165,14 @@ export const NoteDetails = () => {
       </div>
 
       {/* Note Header Info Card */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
-            {note.category?.name && <Badge variant="indigo">{note.category.name}</Badge>}
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{note.title}</h1>
+            <div className="flex items-center gap-2">
+              {note.category?.name && <Badge variant="indigo">{note.category.name}</Badge>}
+              {note.subject?.name && <Badge variant="purple">{note.subject.name}</Badge>}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{note.title}</h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -173,14 +190,14 @@ export const NoteDetails = () => {
           </div>
         </div>
 
-        <p className="text-slate-800 text-sm font-semibold leading-relaxed">{note.description || 'No description provided.'}</p>
+        <p className="text-slate-800 dark:text-slate-200 text-sm font-semibold leading-relaxed">{note.description || 'No description provided.'}</p>
 
         {/* Metadata stats row */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 text-xs text-slate-900 font-bold">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 font-bold">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-1.5">
               <User className="w-4 h-4 text-indigo-600" />
-              <span>Uploaded by <strong className="text-slate-900">{note.uploadedBy?.name || 'Admin'}</strong></span>
+              <span>Uploaded by <strong className="text-slate-900 dark:text-white">{note.uploadedBy?.name || 'Admin'}</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-purple-600" />
@@ -200,8 +217,27 @@ export const NoteDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Embedded Interactive PDF Viewer Component Section */}
+      <div ref={viewerRef} className="space-y-4 pt-2">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-600" />
+            PDF Document Reader
+          </h2>
+          <span className="text-xs font-bold text-slate-500">Interactive Reader Mode</span>
+        </div>
+
+        <PdfViewer
+          pdfUrl={pdfUrl}
+          title={note.title}
+          onDownload={handleDownload}
+          downloading={downloading}
+        />
+      </div>
     </div>
   );
 };
 
 export default NoteDetails;
+

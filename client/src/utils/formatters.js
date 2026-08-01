@@ -27,3 +27,14 @@ export const truncateText = (text, maxLength = 80) => {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 };
+
+// Build clean absolute PDF URL
+export const getPDFUrl = (pdfPath, serverBaseUrl = '') => {
+  if (!pdfPath) return '';
+  if (pdfPath.startsWith('http://') || pdfPath.startsWith('https://') || pdfPath.startsWith('blob:') || pdfPath.startsWith('data:')) {
+    return pdfPath;
+  }
+  const cleanPath = pdfPath.startsWith('/') ? pdfPath : `/${pdfPath}`;
+  return `${serverBaseUrl}${cleanPath}`;
+};
+
