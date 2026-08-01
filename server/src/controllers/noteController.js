@@ -161,21 +161,16 @@ const downloadNote = asyncHandler(async (req, res, next) => {
         if (availablePdfs.length > 0) {
           filePath = path.join(notesDir, availablePdfs[0]);
         } else {
-          res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
           return await serveOrGeneratePDF(req, res, fileName, note);
         }
       } else {
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
         return await serveOrGeneratePDF(req, res, fileName, note);
       }
     }
   }
 
   res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
-  
-  res.download(filePath, downloadFilename, (err) => {
+  return res.download(filePath, downloadFilename, (err) => {
     if (err && !res.headersSent) {
       return next(new AppError('Error delivering PDF document download', 500));
     }
